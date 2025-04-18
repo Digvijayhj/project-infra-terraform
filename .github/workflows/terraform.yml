@@ -9,17 +9,21 @@ on:
     branches:
       - master
 
-env:
-  TF_VAR_region: us-west-2
-
 jobs:
   terraform:
     name: Terraform Plan & Apply
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TF_VAR_region: us-west-2
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+
+      - name: Debug AWS Identity
+        run: aws sts get-caller-identity
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
@@ -34,11 +38,11 @@ jobs:
 
       - name: Terraform Plan (develop only)
         if: github.ref == 'refs/heads/develop'
-        run: terraform plan -var-file=terraform.tfvars
+        run: terraform plan -var="region=us-west-2" -var="key_name=game-room-key"
 
       - name: Terraform Apply (master only)
         if: github.ref == 'refs/heads/master'
-        run: terraform apply -auto-approve -var-file=terraform.tfvars
+        run: terraform apply -auto-approve -var="region=us-west-2" -var="key_name=game-room-key"
 
       - name: Auto-tag with Semantic Versioning (master only)
         if: github.ref == 'refs/heads/master'
