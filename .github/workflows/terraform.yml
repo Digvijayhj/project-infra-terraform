@@ -9,6 +9,12 @@ on:
     branches:
       - master
 
+permissions:
+  contents: write  # Required to push tags
+
+env:
+  TF_VAR_region: us-west-2
+
 jobs:
   terraform:
     name: Terraform Plan & Apply
@@ -16,11 +22,12 @@ jobs:
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      TF_VAR_region: us-west-2
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Important to allow tag creation
 
       - name: Debug AWS Identity
         run: aws sts get-caller-identity
@@ -46,6 +53,8 @@ jobs:
 
       - name: Auto-tag with Semantic Versioning (master only)
         if: github.ref == 'refs/heads/master'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git fetch --tags
           LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "v0.0.0")
