@@ -1,0 +1,62 @@
+name: Terraform CI/CD
+
+on:
+  push:
+    branches:
+      - develop
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  TF_VAR_region: us-west-2
+
+jobs:
+  terraform:
+    name: Terraform Plan & Apply
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan (develop only)
+        if: github.ref == 'refs/heads/develop'
+        run: terraform plan -var-file=terraform.tfvars
+
+      - name: Terraform Apply (master only)
+        if: github.ref == 'refs/heads/master'
+        run: terraform apply -auto-approve -var-file=terraform.tfvars
+
+      - name: Auto-tag with Semantic Versioning (master only)
+        if: github.ref == 'refs/heads/master'
+        run: |
+          git fetch --tags
+          LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          if [[ $LATEST_TAG =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            MAJOR=${BASH_REMATCH[1]}
+            MINOR=${BASH_REMATCH[2]}
+            PATCH=${BASH_REMATCH[3]}
+            PATCH=$((PATCH + 1))
+            NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          else
+            NEW_TAG="v1.0.0"
+          fi
+          echo "Creating new tag: $NEW_TAG"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag $NEW_TAG
+          git push origin $NEW_TAG
