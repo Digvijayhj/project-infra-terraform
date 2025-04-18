@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 resource "aws_security_group" "sg_web" {
-  name        = "game-room-fe-sg"
+  name_prefix = "game-room-fe-sg-"  # allows unique naming
   description = "Allow HTTP for game room frontend"
 
   ingress {
