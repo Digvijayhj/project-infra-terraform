@@ -34,11 +34,11 @@ jobs:
 
       - name: Terraform Plan (develop only)
         if: github.ref == 'refs/heads/develop'
-        run: terraform plan -var-file=terraform.tfvars
+        run: terraform plan -var="region=us-west-2" -var="key_name=game-room-key"
 
       - name: Terraform Apply (master only)
         if: github.ref == 'refs/heads/master'
-        run: terraform apply -auto-approve -var-file=terraform.tfvars
+        run: terraform apply -auto-approve -var="region=us-west-2" -var="key_name=game-room-key"
 
       - name: Auto-tag with Semantic Versioning (master only)
         if: github.ref == 'refs/heads/master'
